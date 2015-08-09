@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="utf-8" />
+<meta http-equiv="content-language" content="ja">
+<title>Leaflet QuickStart 1</title>
+<link rel="stylesheet" href="http://shimz.me/libs/leaflet-0.7.3/leaflet.css" />
+<script src="http://shimz.me/libs/leaflet-0.7.3/leaflet-src.js"></script>
+<script src="http://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+
+<style>
+html, body  {
+	width: 100%;
+	height: 100%;
+	padding: 0px;
+	margin: 0px;
+}
+#map {
+	width: 100%;
+	height: 100%;
+}
+</style>
+</head>
+<body>
+<div id="map"></div>
+<div id="chengeLayerBox" style="position: absolute; z-index: 10000; top: 0px; left: 50px; background-color: rgb(255, 255, 254); padding: 2px; border-radius: 5px;">
+    <input id="nomal" type="button" value="通常" style="cursor:pointer;" />
+    <input id="tiriin" type="button" value="地理院" style="cursor:pointer;" />
+    <input id="mapion" type="button" value="mapion普通" style="cursor:pointer;" />
+    <input id="toggleMap" type="button" value="その他" style="cursor:pointer;" />
+    <input id="ekimade" type="button" value="駅まで" style="cursor:pointer;" />
+    <input id="kawanishi" type="button" value="川西市&宝塚市" style="cursor:pointer;" />
+</div>
+<script>
+var map = L.map('map').setView([35.698849868990564,139.75400356493097], 17);
+
+var mapLink = '<a href="http://openstreetmap.org">OpenStreetMap</a>';
+
+var kokudoCurrent=0;
+var kokudoTizuObj = {
+    "標準地図	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png	1"
+    ,"淡色地図	国土地理院":"http://cyberjapandata.gsi.go.jp/xyz/pale/{z}/{x}/{y}.png"
+    ,"白地図	国土地理院":"http://cyberjapandata.gsi.go.jp/xyz/blank/{z}/{x}/{y}.png"
+    ,"English	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/english/{z}/{x}/{y}.png"
+    ,"色別標高図	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/relief/{z}/{x}/{y}.png"
+    ,"写真	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/ort/{z}/{x}/{y}.jpg"
+    ,"国土画像情報（第一期：1974～1978年撮影）	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/gazo1/{z}/{x}/{y}.jpg"
+    ,"国土画像情報（第二期：1979～1983年撮影）	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/gazo2/{z}/{x}/{y}.jpg"
+    ,"国土画像情報（第三期：1984～1986年撮影）	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/gazo3/{z}/{x}/{y}.jpg"
+    ,"国土画像情報（第四期：1988～1990年撮影）	国土地理院": "http://cyberjapandata.gsi.go.jp/xyz/gazo4/{z}/{x}/{y}.jpg"
+    ,"空中写真（1961～1964年）":"国土地理院	http://cyberjapandata.gsi.go.jp/xyz/ort_old10/{z}/{x}/{y}.png"
+    ,"空中写真（1945～1950年）":"国土地理院	http://cyberjapandata.gsi.go.jp/xyz/ort_USA10/{z}/{x}/{y}.png"
+    ,"簡易空中写真（2004年～）":"http://cyberjapandata.gsi.go.jp/xyz/airphoto/{z}/{x}/{y}.png"
+};
+
+$(function(){
+    $("#nomal").on("click", function(){
+        $("#tizumei").remove();
+       nomalLayer();
+    });
+    $("#tiriin").on("click", function(){
+        $("#tizumei").remove();
+        tiriinLayer();
+    });
+    $("#mapion").on("click", function(){
+        $("#tizumei").remove();
+        mapionLayer();
+    });
+    $("#toggleMap").on("click", function(){
+        var cnt = 0;
+        $("#tizumei").remove();
+        for(i in kokudoTizuObj){
+            if(cnt == kokudoCurrent){
+                L.tileLayer(
+                        kokudoTizuObj[i],
+                        {
+                            maxZoom: 17
+                        }
+                ).addTo(map);
+                $("body").append( '<div id="tizumei" style="position: absolute; z-index: 10000; top: 33px; left: 50px; background-color: rgb(255, 255, 254); padding: 2px; border-radius: 5px;">' + i + '</div>');
+                kokudoCurrent = cnt + 1;
+                break;
+            }else if(cnt>=12){
+                kokudoCurrent = 0;
+                L.tileLayer(
+                        kokudoTizuObj["標準地図	国土地理院"],
+                        {
+                            maxZoom: 17
+                        }
+                ).addTo(map);
+                break;
+            }
+            cnt++;
+        }
+    });
+    $("#ekimade").on("click", function(){
+        geoJsonRender("data/line.json");
+    });
+    $("#kawanishi").on("click", function(){
+        map.setView([34.8301253,135.41727165], 12);
+        geoJsonRender("data//kawanishi.geojson");
+    });
+
+    nomalLayer();
+});
+
+function nomalLayer(){
+    L.tileLayer(
+            'http://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            {
+                attribution: 'Map data &copy; ' + mapLink,
+                maxZoom: 18
+            }
+    ).addTo(map);
+}
+
+function tiriinLayer(){
+    //地理院地図レイヤー追加
+    L.tileLayer(
+            'http://cyberjapandata.gsi.go.jp/xyz/std/{z}/{x}/{y}.png',
+            {
+                attribution: "<a href='http://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html' target='_blank'>国土地理院</a>"
+            }
+    ).addTo(map);
+}
+
+function mapionLayer(){
+    L.tileLayer(
+            'http://cm01.mapion.co.jp/m2/tile/{z}/{x}/{y}.png?usr=atlas',
+            {
+                attribution: "<a href='http://www.gsi.go.jp/kikakuchousei/kikakuchousei40182.html' target='_blank'>国土地理院</a>"
+            }
+    ).addTo(map);
+}
+
+function geoJsonRender(url){
+    $.ajax({
+        url: url
+        ,dataType: "json"
+        ,success: function(geoJSON){
+            L.geoJson(geoJSON).addTo(map); // これだけ
+        }
+    })
+}
+
+function addLineGraphic(geoJSON){
+    L.geoJson(geoJSON).addTo(map);
+}
+
+</script>
+</body>
+</html>
